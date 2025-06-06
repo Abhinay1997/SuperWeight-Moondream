@@ -5,3 +5,17 @@ Paper implementation for [The Super Weight in Large Language Models](https://arx
 Wanted to check if super weights exist for Moondream as well. Curious because I belive Vik was doing Quantization aware training and pruning. Should be a fun experiment.
 
 Note: Code and weights are from the official `revision="2025-04-14"`
+
+### Notes:
+
+#### Super Activations a.k.a large activation spikes
+* persist across layers
+* have constant magnitude
+* exist at same position irrespective of input
+* activation's channel aligns with the super weight's channel
+* activation first appears right after our super weight
+
+Locating super weights by using activation spikes:
+* Detect spikes in mlp.down_proj inputs and outputs across layers
+* Prune the super weight, check the magnitude of the activation, if its drastically reduced, its a super weight.
+* Repeat the same for all the activation spikes that remain after removing each super weight. So far the most seuper weights discovered was for Phi-3-instruct in the paper i.e 6. I think Moondream might behave similarly to Phi-3.
