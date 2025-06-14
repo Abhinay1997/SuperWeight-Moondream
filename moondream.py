@@ -201,7 +201,7 @@ class MoondreamModel(nn.Module):
         # Run through text model in addition to the vision encoder, to minimize
         # re-computation if multiple queries are performed on this image.
         with torch.inference_mode():
-            img_emb = self._run_vision_encoder(image)
+            img_emb = self._run_vision_encoder(image)[0]
             bos_emb = text_encoder(
                 torch.tensor([[self.config.tokenizer.bos_id]], device=self.device),
                 self.text,

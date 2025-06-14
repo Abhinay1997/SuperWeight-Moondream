@@ -1,4 +1,5 @@
 import torch
+import os
 import torch.nn as nn
 
 from torch.nn import functional as F
@@ -139,7 +140,17 @@ def text_decoder(
             n_kv_heads=config.n_kv_heads,
             position_ids=position_ids,
         )
-        l_mlp = mlp(l_in, block.mlp)
+        l_mlp, pre_activation, post_activation = mlp(l_in, block.mlp)
+        ## Save the pre and post activation values and the corresponding layers
+        idx = 0
+        while True:
+            input_path = f"./tensors/text_{i}_input_{idx}.pth"
+            output_path = f"./tensors/text_{i}_output_{idx}.pth"
+            if not (os.path.exists(input_path) or os.path.exists(output_path)):
+                torch.save(pre_activation, input_path)
+                torch.save(post_activation, output_path)
+                break
+            idx += 1
         x = x + l_attn + l_mlp
 
     return x
