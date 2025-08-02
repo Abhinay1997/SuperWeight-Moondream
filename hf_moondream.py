@@ -76,6 +76,11 @@ class HfMoondream(PreTrainedModel):
         self._setup_caches()
         return self.model.detect_gaze
 
+    @property
+    def few_shot_caption(self):
+        self._setup_caches()
+        return self.model.few_shot_caption
+
     def answer_question(
         self,
         image_embeds,
@@ -140,3 +145,8 @@ class HfMoondream(PreTrainedModel):
 
     def input_embeds(self, *args, **kwargs):
         self._unsupported_exception()
+
+    @property
+    def few_shot_caption(self):
+        self._setup_caches()
+        return self.model.few_shot_caption

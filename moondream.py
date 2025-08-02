@@ -404,6 +404,88 @@ class MoondreamModel(nn.Module):
         else:
             return {"caption": "".join(list(generator()))}
 
+    def few_shot_caption(
+        self,
+        example_image: Image.Image,
+        example_caption: str,
+        new_image: Image.Image,
+        query: str = "What is a detailed description of this image?",
+        length: Literal["normal", "short", "long"] = "normal",
+        stream: bool = False,
+        settings: Optional[TextSamplingSettings] = None,
+    ):
+        """
+        Generate a caption for `new_image` using `example_image` and `example_caption`
+        as a one-shot example, with optional custom `query`.
+
+        The prompt uses special tokens ([CAPTION], [QUESTION], [ANSWER]) for alignment
+        with Moondream's training format.
+        """
+        if self.config.tokenizer.templates["caption"] is None:
+            raise NotImplementedError("Model does not support captioning.")
+        if self.config.tokenizer.templates["query"] is None:
+            raise NotImplementedError("Model does not support querying.")
+        if length not in self.config.tokenizer.templates["caption"]:
+            raise ValueError(f"Caption length '{length}' not supported.")
+
+        with torch.inference_mode():
+            # Reset KV caches for clean context
+            self._setup_caches()
+            pos = 0
+
+            # 1. BOS Token
+            bos_emb = text_encoder(
+                torch.tensor([[self.config.tokenizer.bos_id]], device=self.device),
+                self.text,
+            )
+            mask = self.attn_mask[:, :, pos:pos+1, :pos+1]
+            pos_ids = torch.arange(pos, pos+1, device=self.device, dtype=torch.long)
+            self._prefill(bos_emb, mask, pos_ids)
+            pos += 1
+
+            # 2. Encode and inject example image
+            img1_emb = self._run_vision_encoder(example_image)
+            L1 = img1_emb.size(1)
+            mask = self.attn_mask[:, :, pos:pos+L1, :pos+L1]
+            pos_ids = torch.arange(pos, pos+L1, device=self.device, dtype=torch.long)
+            self._prefill(img1_emb, mask, pos_ids)
+            pos += L1
+
+            # 3. Add [CAPTION] + example_caption
+            cap_token = self.config.tokenizer.templates["caption"][length]
+            cap_ids = [cap_token] + self.tokenizer.encode(" " + example_caption).ids
+            cap_tokens = torch.tensor([cap_ids], device=self.device)
+            cap_emb = text_encoder(cap_tokens, self.text)
+            L_cap = cap_emb.size(1)
+            mask = self.attn_mask[:, :, pos:pos+L_cap, :pos+L_cap]
+            pos_ids = torch.arange(pos, pos+L_cap, device=self.device, dtype=torch.long)
+            self._prefill(cap_emb, mask, pos_ids)
+            pos += L_cap
+
+            # 4. Encode and inject new image
+            img2_emb = self._run_vision_encoder(new_image)
+            L2 = img2_emb.size(1)
+            mask = self.attn_mask[:, :, pos:pos+L2, :pos+L2]
+            pos_ids = torch.arange(pos, pos+L2, device=self.device, dtype=torch.long)
+            self._prefill(img2_emb, mask, pos_ids)
+            pos += L2
+
+            # 5. Final prompt: [QUESTION] + query + [ANSWER]
+            q_prefix = self.config.tokenizer.templates["query"]["prefix"]
+            q_suffix = self.config.tokenizer.templates["query"]["suffix"]
+            query_ids = q_prefix + self.tokenizer.encode(" " + query).ids + q_suffix
+            query_tokens = torch.tensor([query_ids], device=self.device)
+
+            # Generate response
+            def generator():
+                for token in self._generate_text(query_tokens, pos, settings):
+                    yield token
+
+            if stream:
+                return {"caption": generator()}
+            else:
+                return {"caption": "".join(list(generator()))}
+            
     def _generate_points(
         self,
         hidden: torch.Tensor,

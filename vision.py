@@ -69,10 +69,7 @@ def vision_encoder(input_BCHW: torch.Tensor, w: nn.Module, config: VisionConfig)
     for index, block in enumerate(w.blocks):
         x = x + attn(layer_norm(x, block.ln1), block.attn, n_heads=config.enc_n_heads)
         mlp_in = layer_norm(x, block.ln2)
-        mlp_out, pre_activation, post_activation = mlp(mlp_in, block.mlp)
-        ## Save the pre and post activation values and the corresponding layers
-        torch.save(pre_activation, f"./tensors/vision_{index}_input.pth")
-        torch.save(post_activation, f"./tensors/vision_{index}_output.pth")
+        mlp_out = mlp(mlp_in, block.mlp)
         x = x + mlp_out
     x = layer_norm(x, w.post_ln)
 
