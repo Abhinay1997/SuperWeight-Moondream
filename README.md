@@ -24,4 +24,4 @@ The models in the paper are all Decoder models. None of them have a Vision Encod
 
 ## Other research
 
-1. Check the branch: fewshot for one/few shot prompting for moondream. Colab [here](https://colab.research.google.com/drive/1cQLDghIMUN5lckITpMU4iWGVtO5n478M?usp=sharing)
+1. Check the branch: [fewshot](https://github.com/Abhinay1997/SuperWeight-Moondream/tree/fewshot) for one/few shot prompting for moondream. Colab [here](https://colab.research.google.com/drive/1cQLDghIMUN5lckITpMU4iWGVtO5n478M?usp=sharing)
