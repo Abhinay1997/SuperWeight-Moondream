@@ -40,8 +40,8 @@ def mlp(x: torch.Tensor, w: MLPWeights) -> torch.Tensor:
     x = w.fc1(x)
     pre_activation = x
     x = gelu_approx(x)
-    post_activation = x
     x = w.fc2(x)
+    post_activation = x
     return x, pre_activation, post_activation
 
 
