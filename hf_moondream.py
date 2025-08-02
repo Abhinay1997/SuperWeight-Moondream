@@ -77,9 +77,9 @@ class HfMoondream(PreTrainedModel):
         return self.model.detect_gaze
 
     @property
-    def few_shot_caption(self):
+    def one_shot_caption(self):
         self._setup_caches()
-        return self.model.few_shot_caption
+        return self.model.one_shot_caption
 
     def answer_question(
         self,
@@ -147,6 +147,6 @@ class HfMoondream(PreTrainedModel):
         self._unsupported_exception()
 
     @property
-    def few_shot_caption(self):
+    def one_shot_caption(self):
         self._setup_caches()
-        return self.model.few_shot_caption
+        return self.model.one_shot_caption
